@@ -31,6 +31,10 @@ WORKDIR /var/www
 # Copy the application code to the container
 COPY . .
 
+# Set permissions for Laravel storage and bootstrap/cache directories
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/database \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache /var/www/database
+
 # Install dependencies
 RUN composer install --optimize-autoloader --no-dev
 

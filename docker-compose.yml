@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: laravel_app
     working_dir: /var/www
+    user: "www-data" # Ensure the container runs as the www-data user
     volumes:
       - .:/var/www
     networks:
