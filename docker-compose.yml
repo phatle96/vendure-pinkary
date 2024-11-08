@@ -3,11 +3,14 @@
 services:
   app:
     build:
+      args:
+        user: vendor
+        uid: 6789
       context: .
       dockerfile: Dockerfile
     container_name: laravel_app
+    restart: unless-stopped
     working_dir: /var/www
-    user: "www-data" # Ensure the container runs as the www-data user
     volumes:
       - .:/var/www
     networks:
