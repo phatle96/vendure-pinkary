@@ -254,7 +254,10 @@ final class Create extends Component
         if($this->isSharingUpdate){
             Novu::broadcastEvent([
                 'name' => 'server-notification',
-                'payload' => ['message' => $validated['answer']],
+                'payload' => [
+                    'subject' => 'You got a message from Pinkary user',
+                    'message' => $validated['answer']
+                ],
             ])->toArray();
         }
 
