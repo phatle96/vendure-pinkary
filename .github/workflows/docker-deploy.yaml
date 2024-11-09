@@ -168,14 +168,14 @@ jobs:
       - name: 6. Build Docker images on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
-            cd ${VPS_PATH} &&
+            cd ${{ vars.VPS_PATH }} &&
             docker compose build
           "
 
       - name: 7. Restart services with new images on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
-            cd ${VPS_PATH} &&
+            cd ${{ vars.VPS_PATH }} &&
             docker compose down &&
             docker compose up -d
           "
