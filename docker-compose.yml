@@ -3,16 +3,14 @@
 services:
   app:
     build:
-      args:
-        user: vendor
-        uid: 6789
       context: .
       dockerfile: Dockerfile
     container_name: laravel_app
     restart: unless-stopped
     working_dir: /var/www
+    user: "www-data" # Ensure the container runs as the www-data user
     volumes:
-      - .:/var/www
+      - pinkary-data:/var/www
     networks:
       - app-network
 
@@ -23,7 +21,7 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - .:/var/www
+      - pinkary-data:/var/www
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     networks:
       - app-network
@@ -31,3 +29,6 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  pinkary-data:
