@@ -162,7 +162,15 @@ jobs:
             echo 'GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}' >> ${VPS_PATH}/.env &&
             echo 'GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}' >> ${VPS_PATH}/.env &&
             echo 'GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}' >> ${VPS_PATH}/.env &&
-            echo 'GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI}' >> ${VPS_PATH}/.env
+            echo 'GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI}' >> ${VPS_PATH}/.env &&
+            echo 'SPONSORS_GITHUB_USERNAMES=${SPONSORS_GITHUB_USERNAMES}' >> ${VPS_PATH}/.env &&
+            echo 'SPONSORS_GITHUB_COMPANY_USERNAMES=${SPONSORS_GITHUB_COMPANY_USERNAMES}' >> ${VPS_PATH}/.env &&
+            echo 'DEBUGBAR_ENABLED=${DEBUGBAR_ENABLED}' >> ${VPS_PATH}/.env &&
+            echo 'DEBUGBAR_THEME=${DEBUGBAR_THEME}' >> ${VPS_PATH}/.env &&
+            echo 'NOVU_API_KEY=${NOVU_API_KEY}' >> ${VPS_PATH}/.env &&
+            echo 'BOT_URL=${BOT_URL}' >> ${VPS_PATH}/.env &&
+            echo 'VPS_USER=${VPS_USER}' >> ${VPS_PATH}/.env &&
+            echo 'VPS_UID=${VPS_UID}' >> ${VPS_PATH}/.env
           "
 
       - name: 6. Build Docker images on VPS
