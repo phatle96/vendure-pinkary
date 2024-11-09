@@ -44,7 +44,7 @@ jobs:
       - name: 4. Pull the latest code
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
-            cd ${VPS_PATH} &&
+            cd ${{ vars.VPS_PATH }} &&
             git fetch &&
             git checkout ${{ contains(github.ref, '-production') && 'main' || contains(github.ref, '-staging') && 'staging' }} &&
             git pull origin ${{ contains(github.ref, '-production') && 'main' || contains(github.ref, '-staging') && 'staging' }}
