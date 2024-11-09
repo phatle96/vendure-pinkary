@@ -4,16 +4,17 @@ services:
   app:
     build:
       args:
-        user: phatle
-        uid: 1001
+        user: ${VPS_USER}
+        uid: ${VPS_UID}
       context: .
       dockerfile: Dockerfile
     container_name: laravel_app
     restart: unless-stopped
     working_dir: /var/www
-    user: phatle
+    user: ${VPS_USER}
     volumes:
-      - .:/var/www
+      - pinkary-app:/var/www
+      - ./database/database.sqlite:/var/www/database/database.sqlite
     networks:
       - app-network
 
@@ -24,7 +25,7 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - .:/var/www
+      - pinkary-app:/var/www
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     networks:
       - app-network
@@ -32,3 +33,7 @@ services:
 networks:
   app-network:
     driver: bridge
+  
+volumes: 
+  pinkary-app:
+    driver: local

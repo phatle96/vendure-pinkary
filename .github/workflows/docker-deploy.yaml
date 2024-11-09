@@ -1,0 +1,200 @@
+name: VPS Local Build and Deploy
+
+on:
+  push:
+    tags:
+      - "v[0-9]+\\.[0-9]+\\.[0-9]+-staging"
+      - "v[0-9]+\\.[0-9]+\\.[0-9]+-production"
+      - "v[0-9]+\\.[0-9]+\\.[0-9]+-local"
+  workflow_dispatch:
+
+jobs:
+  deploy-ubuntu:
+    if: ${{ contains(github.ref, '-production') || contains(github.ref, '-staging') }}
+    runs-on: ubuntu-latest
+    environment: ${{ contains(github.ref, '-production') && 'production' || contains(github.ref, '-staging') && 'staging' }}
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Set environment based on branch
+        id: env_branch
+        run: |
+          if [[ "${GITHUB_REF}" == "refs/tags/v"* ]]; then
+            if [[ "${GITHUB_REF}" == *"-production" ]]; then
+              echo "environment=production" >> $GITHUB_ENV
+            elif [[ "${GITHUB_REF}" == *"-staging" ]]; then
+              echo "environment=staging" >> $GITHUB_ENV
+            else
+              echo "Unknown environment, exiting."
+              exit 1
+            fi
+          else
+            echo "Not a version tag, exiting."
+            exit 1
+          fi
+        shell: bash
+
+      - name: 3. Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_PRIVATE_KEY }}
+
+      - name: 4. Pull the latest code
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            cd ${VPS_PATH} &&
+            git fetch &&
+            git checkout ${{ contains(github.ref, '-production') && 'main' || contains(github.ref, '-staging') && 'staging' }} &&
+            git pull origin ${{ contains(github.ref, '-production') && 'main' || contains(github.ref, '-staging') && 'staging' }}
+          "
+
+      - name: 5. Create .env file on VPS
+        env: 
+            APP_NAME: ${{ secrets.APP_NAME || '' }}
+            APP_ENV: ${{ secrets.APP_ENV || '' }}
+            APP_KEY: ${{ secrets.APP_KEY || '' }}
+            APP_DEBUG: ${{ secrets.APP_DEBUG || '' }}
+            APP_TIMEZONE: ${{ secrets.APP_TIMEZONE || '' }}
+            APP_URL: ${{ secrets.APP_URL || '' }}
+            APP_LOCALE: ${{ secrets.APP_LOCALE || '' }}
+            APP_FALLBACK_LOCALE: ${{ secrets.APP_FALLBACK_LOCALE || '' }}
+            APP_FAKER_LOCALE: ${{ secrets.APP_FAKER_LOCALE || '' }}
+            APP_MAINTENANCE_DRIVER: ${{ secrets.APP_MAINTENANCE_DRIVER || '' }}
+            APP_MAINTENANCE_STORE: ${{ secrets.APP_MAINTENANCE_STORE || '' }}
+            BCRYPT_ROUNDS: ${{ secrets.BCRYPT_ROUNDS || '' }}
+            LOG_CHANNEL: ${{ secrets.LOG_CHANNEL || '' }}
+            LOG_STACK: ${{ secrets.LOG_STACK || '' }}
+            LOG_DEPRECATIONS_CHANNEL: ${{ secrets.LOG_DEPRECATIONS_CHANNEL || '' }}
+            LOG_LEVEL: ${{ secrets.LOG_LEVEL || '' }}
+            DB_CONNECTION: ${{ secrets.DB_CONNECTION || '' }}
+            DB_DATABASE: ${{ secrets.DB_DATABASE || '' }}
+            BROADCAST_CONNECTION: ${{ secrets.BROADCAST_CONNECTION || '' }}
+            CACHE_STORE: ${{ secrets.CACHE_STORE || '' }}
+            FILESYSTEM_DISK: ${{ secrets.FILESYSTEM_DISK || '' }} 
+            QUEUE_CONNECTION: ${{ secrets.QUEUE_CONNECTION || '' }}
+            SESSION_DRIVER: ${{ secrets.SESSION_DRIVER || '' }}
+            SESSION_LIFETIME: ${{ secrets.SESSION_LIFETIME || '' }}
+            MEMCACHED_HOST: ${{ secrets.MEMCACHED_HOST || '' }}
+            REDIS_CLIENT: ${{ secrets.REDIS_CLIENT || '' }}
+            REDIS_HOST: ${{ secrets.REDIS_HOST || '' }}
+            REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || '' }}
+            REDIS_PORT: ${{ secrets.REDIS_PORT || '' }}
+            MAIL_MAILER: ${{ secrets.MAIL_MAILER || '' }}
+            MAIL_HOST: ${{ secrets.MAIL_HOST || '' }}
+            MAIL_PORT: ${{ secrets.MAIL_PORT || '' }}
+            MAIL_USERNAME: ${{ secrets.MAIL_USERNAME || '' }}
+            MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD || '' }}
+            MAIL_ENCRYPTION: ${{ secrets.MAIL_ENCRYPTION || '' }}
+            MAIL_FROM_ADDRESS: ${{ secrets.MAIL_FROM_ADDRESS || '' }}
+            MAIL_FROM_NAME: ${{ secrets.MAIL_FROM_NAME || '' }}
+            VITE_APP_NAME: ${{ secrets.VITE_APP_NAME || '' }}
+            MAILCOACH_TOKEN: ${{ secrets.MAILCOACH_TOKEN || '' }}
+            PENNANT_STORE: ${{ secrets.PENNANT_STORE || '' }}
+            RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY || '' }}
+            RECAPTCHA_SITE_SECRET: ${{ secrets.RECAPTCHA_SITE_SECRET || '' }}
+            LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY || '' }}
+            LEMON_SQUEEZY_STORE: ${{ secrets.LEMON_SQUEEZY_STORE || '' }}
+            LEMON_SQUEEZY_SIGNING_SECRET: ${{ secrets.LEMON_SQUEEZY_SIGNING_SECRET || '' }}
+            LEMON_SQUEEZY_PATH: ${{ secrets.LEMON_SQUEEZY_PATH || '' }}
+            GITHUB_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN || '' }}
+            GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID || '' }}
+            GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET || '' }}
+            GITHUB_REDIRECT_URI: ${{ secrets.GITHUB_REDIRECT_URI || '' }}
+            SPONSORS_GITHUB_USERNAMES: ${{ secrets.SPONSORS_GITHUB_USERNAMES || '' }}
+            SPONSORS_GITHUB_COMPANY_USERNAMES: ${{ secrets.SPONSORS_GITHUB_COMPANY_USERNAMES || '' }}
+            DEBUGBAR_ENABLED: ${{ secrets.DEBUGBAR_ENABLED || '' }}
+            DEBUGBAR_THEME: ${{ secrets.DEBUGBAR_THEME || '' }}
+            NOVU_API_KEY: ${{ secrets.NOVU_API_KEY || '' }}
+            BOT_URL: ${{ secrets.BOT_URL || '' }}
+            VPS_USER: ${{ secrets.VPS_USER || '' }}
+            VPS_UID: ${{ secrets.VPS_UID || '' }}
+            VPS_PATH: ${{ vars.VPS_PATH || '' }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            echo 'APP_NAME=${APP_NAME}' > ${VPS_PATH}/.env &&
+            echo 'APP_ENV=${APP_ENV}' >> ${VPS_PATH}/.env &&
+            echo 'APP_KEY=${APP_KEY}' >> ${VPS_PATH}/.env &&
+            echo 'APP_DEBUG=${APP_DEBUG}' >> ${VPS_PATH}/.env &&
+            echo 'APP_TIMEZONE=${APP_TIMEZONE}' >> ${VPS_PATH}/.env &&
+            echo 'APP_URL=${APP_URL}' >> ${VPS_PATH}/.env &&
+            echo 'APP_LOCALE=${APP_LOCALE}' >> ${VPS_PATH}/.env &&
+            echo 'APP_FALLBACK_LOCALE=${APP_FALLBACK_LOCALE}' >> ${VPS_PATH}/.env &&
+            echo 'APP_FAKER_LOCALE=${APP_FAKER_LOCALE}' >> ${VPS_PATH}/.env &&
+            echo 'APP_MAINTENANCE_DRIVER=${APP_MAINTENANCE_DRIVER}' >> ${VPS_PATH}/.env &&
+            echo 'APP_MAINTENANCE_STORE=${APP_MAINTENANCE_STORE}' >> ${VPS_PATH}/.env &&
+            echo 'BCRYPT_ROUNDS=${BCRYPT_ROUNDS}' >> ${VPS_PATH}/.env &&
+            echo 'LOG_CHANNEL=${LOG_CHANNEL}' >> ${VPS_PATH}/.env &&
+            echo 'LOG_STACK=${LOG_STACK}' >> ${VPS_PATH}/.env &&
+            echo 'LOG_DEPRECATIONS_CHANNEL=${LOG_DEPRECATIONS_CHANNEL}' >> ${VPS_PATH}/.env &&
+            echo 'LOG_LEVEL=${LOG_LEVEL}' >> ${VPS_PATH}/.env &&
+            echo 'DB_CONNECTION=${DB_CONNECTION}' >> ${VPS_PATH}/.env &&
+            echo 'DB_DATABASE=${DB_DATABASE}' >> ${VPS_PATH}/.env &&
+            echo 'BROADCAST_CONNECTION=${BROADCAST_CONNECTION}' >> ${VPS_PATH}/.env &&
+            echo 'CACHE_STORE=${CACHE_STORE}' >> ${VPS_PATH}/.env &&
+            echo 'FILESYSTEM_DISK=${FILESYSTEM_DISK}' >> ${VPS_PATH}/.env &&
+            echo 'QUEUE_CONNECTION=${QUEUE_CONNECTION}' >> ${VPS_PATH}/.env &&
+            echo 'SESSION_DRIVER=${SESSION_DRIVER}' >> ${VPS_PATH}/.env &&
+            echo 'SESSION_LIFETIME=${SESSION_LIFETIME}' >> ${VPS_PATH}/.env &&
+            echo 'MEMCACHED_HOST=${MEMCACHED_HOST}' >> ${VPS_PATH}/.env &&
+            echo 'REDIS_CLIENT=${REDIS_CLIENT}' >> ${VPS_PATH}/.env &&
+            echo 'REDIS_HOST=${REDIS_HOST}' >> ${VPS_PATH}/.env &&
+            echo 'REDIS_PASSWORD=${REDIS_PASSWORD}' >> ${VPS_PATH}/.env &&
+            echo 'REDIS_PORT=${REDIS_PORT}' >> ${VPS_PATH}/.env &&
+            echo 'MAIL_MAILER=${MAIL_MAILER}' >> ${VPS_PATH}/.env &&
+            echo 'MAIL_HOST=${MAIL_HOST}' >> ${VPS_PATH}/.env &&
+            echo 'MAIL_PORT=${MAIL_PORT}' >> ${VPS_PATH}/.env &&
+            echo 'MAIL_USERNAME=${MAIL_USERNAME}' >> ${VPS_PATH}/.env &&
+            echo 'MAIL_PASSWORD=${MAIL_PASSWORD}' >> ${VPS_PATH}/.env &&
+            echo 'MAIL_ENCRYPTION=${MAIL_ENCRYPTION}' >> ${VPS_PATH}/.env &&
+            echo 'MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}' >> ${VPS_PATH}/.env &&
+            echo 'MAIL_FROM_NAME=${MAIL_FROM_NAME}' >> ${VPS_PATH}/.env &&
+            echo 'VITE_APP_NAME=${VITE_APP_NAME}' >> ${VPS_PATH}/.env &&
+            echo 'MAILCOACH_TOKEN=${MAILCOACH_TOKEN}' >> ${VPS_PATH}/.env &&
+            echo 'PENNANT_STORE=${PENNANT_STORE}' >> ${VPS_PATH}/.env &&
+            echo 'RECAPTCHA_SITE_KEY=${RECAPTCHA_SITE_KEY}' >> ${VPS_PATH}/.env &&
+            echo 'RECAPTCHA_SITE_SECRET=${RECAPTCHA_SITE_SECRET}' >> ${VPS_PATH}/.env &&
+            echo 'LEMON_SQUEEZY_API_KEY=${LEMON_SQUEEZY_API_KEY}' >> ${VPS_PATH}/.env &&
+            echo 'LEMON_SQUEEZY_STORE=${LEMON_SQUEEZY_STORE}' >> ${VPS_PATH}/.env &&
+            echo 'LEMON_SQUEEZY_SIGNING_SECRET=${LEMON_SQUEEZY_SIGNING_SECRET}' >> ${VPS_PATH}/.env &&
+            echo 'LEMON_SQUEEZY_PATH=${LEMON_SQUEEZY_PATH}' >> ${VPS_PATH}/.env &&
+            echo 'GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}' >> ${VPS_PATH}/.env &&
+            echo 'GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}' >> ${VPS_PATH}/.env &&
+            echo 'GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}' >> ${VPS_PATH}/.env &&
+            echo 'GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI}' >> ${VPS_PATH}
+            ecj
+          "
+
+      - name: 6. Build Docker images on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            cd ${VPS_PATH} &&
+            docker compose build
+          "
+
+      - name: 7. Restart services with new images on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            cd ${VPS_PATH} &&
+            docker compose down &&
+            docker compose up -d
+          "
+
+      - name: 8. Clean up unused Docker images on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            docker image prune -af
+          "
+
+      - name: 9. Remove old containers on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            docker container prune -f
+          "
+
+      - name: 10. Remove unused volumes on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            docker volume prune -f
+          "
