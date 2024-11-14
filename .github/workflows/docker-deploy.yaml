@@ -43,7 +43,7 @@ jobs:
 
       - name: 4. Pull the latest code
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          ssh -o StrictHostKeyChecking=no -p ${{secrets.VPS_PORT}} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
             cd ${{ vars.VPS_PATH }} &&
             git fetch &&
             git checkout ${{ contains(github.ref, '-production') && 'main' || contains(github.ref, '-staging') && 'staging' }} &&
@@ -112,7 +112,7 @@ jobs:
             VPS_UID: ${{ secrets.VPS_UID || '' }}
             VPS_PATH: ${{ vars.VPS_PATH || '' }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          ssh -o StrictHostKeyChecking=no -p ${{secrets.VPS_PORT}} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
             echo 'APP_NAME=${APP_NAME}' > ${VPS_PATH}/.env &&
             echo 'APP_ENV=${APP_ENV}' >> ${VPS_PATH}/.env &&
             echo 'APP_KEY=${APP_KEY}' >> ${VPS_PATH}/.env &&
@@ -175,14 +175,14 @@ jobs:
 
       - name: 6. Build Docker images on VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          ssh -o StrictHostKeyChecking=no -p ${{secrets.VPS_PORT}} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
             cd ${{ vars.VPS_PATH }} &&
             docker compose build
           "
 
       - name: 7. Restart services with new images on VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          ssh -o StrictHostKeyChecking=no -p ${{secrets.VPS_PORT}} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
             cd ${{ vars.VPS_PATH }} &&
             docker compose down &&
             docker compose up -d
@@ -190,18 +190,18 @@ jobs:
 
       - name: 8. Clean up unused Docker images on VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          ssh -o StrictHostKeyChecking=no -p ${{secrets.VPS_PORT}} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
             docker image prune -af
           "
 
       - name: 9. Remove old containers on VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          ssh -o StrictHostKeyChecking=no -p ${{secrets.VPS_PORT}} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
             docker container prune -f
           "
 
       - name: 10. Remove unused volumes on VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          ssh -o StrictHostKeyChecking=no -p ${{secrets.VPS_PORT}} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
             docker volume prune -f
           "
